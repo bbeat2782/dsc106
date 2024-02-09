@@ -19,19 +19,36 @@
   let gx;
   let gy;
 
-//   $: console.log(data.length);
-//   $: console.log(selectedCountries);
-  $: worldData = data.filter(d => d.country === 'World');
+  $: maxPrimConsPerCapita = 0
+  $: worldData = data.filter(d => d.country === 'World' && d.prim_cons_per_capita !== 0);
   $: countryData = selectedCountries.map(country => {
     return {
         country: country,
-        data: data.filter(d => d.country === country)
+        data: data.filter(d => d.country === country && d.prim_cons_per_capita !== 0)
     };
   })
-//   $: console.log(countryData);
-  $: console.log(worldData);
+
+  $: if(selectedCountries) {
+    maxPrimConsPerCapita = 0;
+    // reset gridlines TODO
+    d3.select(gy).call((g) => g.selectAll('.tick line').remove());
+  }
+
+
+//   $: maxPrimConsPerCapita = 0;
+  $: countryData.forEach(country => {
+    country.data.forEach(d => {
+        if (d.prim_cons_per_capita > maxPrimConsPerCapita) {
+            maxPrimConsPerCapita = d.prim_cons_per_capita;
+        }
+    });
+  });
+
+  $: console.log(maxPrimConsPerCapita);
+
   $: years = worldData.map(d => d.year);
-  $: console.log(d3.max(years))
+  $: world_primary_energy_cons_per_capita = worldData.map(d => d.prim_cons_per_capita);
+  $: maxPrimConsPerCapita = maxPrimConsPerCapita > d3.max(world_primary_energy_cons_per_capita) ? maxPrimConsPerCapita : d3.max(world_primary_energy_cons_per_capita);
 
   $: x = d3.scaleTime()
     .domain([d3.min(years), d3.max(years)])
@@ -39,7 +56,7 @@
 
 
   $: y = d3.scaleLinear()
-    .domain(d3.extent(worldData, (d) => d.primary_energy_consumption))
+    .domain([0, maxPrimConsPerCapita])
     .nice()
     .range([height - marginBottom, marginTop]);
 
@@ -49,9 +66,10 @@
     .ticks(width / 80)
     .tickFormat(d3.format("")));
 
+  
   $: d3.select(gy)
     .call(d3.axisLeft(y)
-    .ticks(null, '+')
+    // .ticks(null, '+')
     .tickFormat(d3.format(".2s")))
     // grid lines
     .call((g) =>
@@ -59,15 +77,18 @@
         .selectAll('.tick line')
         .clone()
         .attr('x2', width - marginRight - marginLeft)
-        .attr('stroke-opacity', (d) => (d === 0 ? 1 : 0.1)),
+        //.attr('stroke-opacity', (d) => (d === 0 ? 1 : 0.1)),
+        .attr('stroke-opacity', 0.1),
     );
 
   // Generate line path
   $: line = d3.line()
     .x(d => x(d.year))
-    .y(d => y(d.primary_energy_consumption));
+    .y(d => y(d.prim_cons_per_capita));
 
   $: linePath = line(worldData);
+
+  $: linesCountry = countryData.map(c => line(c.data));
 </script>
 
 <div class="consumption-plot">
@@ -89,9 +110,12 @@
             font-weight="bold"
             text-anchor="start"
         >
-            Energy Consumption per Capita
+            Primary Energy Consumption per Capita
         </text>
     </g>
     <path d={linePath} fill="none" stroke="blue" stroke-width="2" />
+    {#each linesCountry as line, i}
+        <path d={line} fill="none" stroke="black" stroke-width="2" />
+    {/each}
   </svg>
 </div>

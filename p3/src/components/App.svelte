@@ -8,7 +8,7 @@
   let uniqueCountries = [];
   let selectedCountries = [];
   let dropdownOpen = false;
-
+  const continentList = ['North America', 'South America', 'Europe', 'Africa', 'Asia', 'Oceania', 'World'];
 
   onMount(async () => {
     const res = await fetch(
@@ -34,8 +34,10 @@
       renewables_consumption: +d['renewables_consumption'],
       solar_consumption: +d['solar_consumption'],
       wind_consumption: +d['wind_consumption'],
+      prim_cons_per_capita: +d['primary_energy_consumption'] / +d['population'],
     }));
-    data = data;
+    data = data.filter(d => d.iso_code !== '' || continentList.includes(d.country));
+    console.log(data);
     uniqueCountries = [...new Set(data.map(d => d.country))];
   });
 
@@ -59,6 +61,7 @@
 
   function toggleDropdown() {
     dropdownOpen = !dropdownOpen;
+    // console.log(dropdownOpen);
   }
 
   function closeDropdown(event) {
