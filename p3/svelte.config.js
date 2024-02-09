@@ -8,7 +8,7 @@ const config = {
     kit: {
         adapter: adapter(),
 		paths: {
-            base: process.env.NODE_ENV === 'production' ? '/dsc106_project' : '',
+            base: process.env.NODE_ENV === 'production' ? '/dsc106' : '',
         }
     }
 };
